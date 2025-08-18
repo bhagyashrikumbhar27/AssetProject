@@ -19,7 +19,7 @@ public class MailService {
         SimpleMailMessage m = new SimpleMailMessage();
         m.setFrom(from); m.setTo(to);
         m.setSubject("Your account credentials");
-        m.setText("Welcome!\nUsername: "+to+"\nPassword: "+rawPwd);
+        m.setText("Welcome! \nUsername: "+to+"\nPassword: "+rawPwd);
         sender.send(m);
     }
 

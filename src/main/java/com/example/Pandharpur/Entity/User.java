@@ -27,6 +27,7 @@ public class User {
     @ManyToOne
     private Department department;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "location_id")
     private Location location;
 }
