@@ -5,7 +5,6 @@ import com.greentin.assetApp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
@@ -17,13 +16,15 @@ public class UserDetailsServiceConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return email -> {
-            User user = userRepository.findByEmail(email.toUpperCase())
+        return rawEmail -> {
+            String email = rawEmail == null ? null : rawEmail.trim();
+            User user = userRepository.findByEmailIgnoreCase(email)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            // roles(...) automatically prefixes ROLE_
             return org.springframework.security.core.userdetails.User.builder()
                     .username(user.getEmail())
                     .password(user.getPassword())
-                    .roles(user.getRole()) // role must be uppercase
+                    .roles(user.getRole())
                     .build();
         };
     }

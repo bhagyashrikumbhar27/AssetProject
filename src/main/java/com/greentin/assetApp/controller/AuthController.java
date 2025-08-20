@@ -25,7 +25,14 @@ public class AuthController {
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             User user = authService.authenticate(request.getEmail(), request.getPassword());
-            return ResponseEntity.ok(user);
+            // Build JWT with email as subject and role claim
+            java.util.Map<String,Object> claims = new java.util.HashMap<>();
+            claims.put("role", user.getRole());
+            String token = com.greentin.assetApp.config.JwtUtil.generateToken(user.getEmail(), claims);
+            return ResponseEntity.ok(java.util.Map.of(
+                    "token", token,
+                    "user", user
+            ));
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }

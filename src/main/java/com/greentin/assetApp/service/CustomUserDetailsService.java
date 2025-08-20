@@ -19,11 +19,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        // Give the user their role as authority
+        // Prefix ROLE_ to follow Spring Security convention
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
-                List.of(new SimpleGrantedAuthority(user.getRole()))
+                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
         );
     }
 }
