@@ -1,10 +1,15 @@
 package com.greentin.assetApp.controller;
 
-import com.greentin.assetApp.dto.UserDto;
-import com.greentin.assetApp.dto.RoleDto;
 import com.greentin.assetApp.dto.DepartmentDto;
+import com.greentin.assetApp.dto.RoleDto;
+import com.greentin.assetApp.dto.StatusUpdateDto;
+import com.greentin.assetApp.dto.UserDto;
+import com.greentin.assetApp.entity.User;
+import com.greentin.assetApp.service.EmailService;
 import com.greentin.assetApp.service.SuperAdminService;
+import com.greentin.assetApp.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,11 +21,29 @@ import java.util.List;
 public class SuperAdminController {
 
     private final SuperAdminService superAdminService;
+    private final UserService userService;
+    private final EmailService emailService;
 
     // 🔹 User Management
     @GetMapping("/users")
     public List<UserDto> getAllUsers() {
         return superAdminService.getAllUsers();
+    }
+
+    @PostMapping("/users/{id}/status")
+    public ResponseEntity<?> updateUserStatus(@PathVariable Long id, @RequestBody StatusUpdateDto statusUpdate) {
+        // In a real app, the admin email would come from the security context
+        String adminEmail = "admin@example.com"; // Placeholder
+        try {
+            User updatedUser = userService.updateUserStatus(id, statusUpdate.getStatus(), adminEmail);
+            // Notify user
+            String subject = "Your account status has been updated";
+            String body = "Your account has been " + statusUpdate.getStatus().toLowerCase() + ".";
+            emailService.sendEmail(updatedUser.getEmail(), subject, body);
+            return ResponseEntity.ok(updatedUser);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
     }
 
     @PostMapping("/users")

@@ -17,6 +17,7 @@ public class AuthServiceImpl {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     public ApiResponse register(RegistrationRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -35,7 +36,22 @@ public class AuthServiceImpl {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // Notify super admin(s)
+        if ("ADMIN".equalsIgnoreCase(savedUser.getDepartment()) || "STORE_MANAGER".equalsIgnoreCase(savedUser.getRole())) {
+            List<User> superAdmins = userRepository.findByRole("SUPER_ADMIN");
+            for (User superAdmin : superAdmins) {
+                String subject = "New User Registration";
+                String body = "A new user has registered with the following details:\n\n" +
+                        "Name: " + savedUser.getName() + "\n" +
+                        "Email: " + savedUser.getEmail() + "\n" +
+                        "Role: " + savedUser.getRole() + "\n" +
+                        "Department: " + savedUser.getDepartment();
+                emailService.sendEmail(superAdmin.getEmail(), subject, body);
+            }
+        }
+
         return new ApiResponse(true, "Account created successfully");
     }
 

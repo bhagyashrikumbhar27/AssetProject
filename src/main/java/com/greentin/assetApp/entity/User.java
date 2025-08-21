@@ -27,6 +27,10 @@ public class User {
 
     private String role;
 
+    private String status = "PENDING"; // PENDING, APPROVED, REJECTED
+
+    private String lastModifiedBy; // email of admin who approved/rejected
+
     public void setRole(String role) {
         if (role != null) {
             this.role = role.toUpperCase(); // Force uppercase
