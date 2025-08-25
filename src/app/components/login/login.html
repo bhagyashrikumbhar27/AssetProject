@@ -1,0 +1,104 @@
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center position-relative fade-in login-background">
+  <!-- Floating Geometric Shapes -->
+  <div class="login-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+    <div class="shape shape-5"></div>
+    <div class="shape shape-6"></div>
+  </div>
+  
+  <div class="row w-100 justify-content-center">
+    <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+      <div class="card shadow-lg border-0 glass-effect">
+        <div class="card-body p-5">
+          <div class="text-center mb-4 position-relative">
+            <div class="monkey-emoji" *ngIf="showMonkey" title="🙈">
+              🙈
+            </div>
+            <i class="bi bi-clipboard-check text-primary" style="font-size: 3rem;"></i>
+            <h2 class="card-title mt-3 mb-1 fw-bold">Welcome Back</h2>
+            <p class="text-muted">Login to your account</p>
+          </div>
+          
+          <form (ngSubmit)="login()" class="needs-validation" novalidate>
+            <div class="mb-3">
+              <label for="email" class="form-label fw-semibold">
+                <i class="bi bi-envelope me-2"></i>Email
+              </label>
+              <input 
+                type="email" 
+                class="form-control form-control-lg" 
+                id="email" 
+                name="email" 
+                [(ngModel)]="email"
+                (focus)="closeRecoveryPanels()"
+                placeholder="Enter your email"
+                required>
+            </div>
+            
+            <div class="mb-4">
+              <label for="password" class="form-label fw-semibold">
+                <i class="bi bi-lock me-2"></i>Password
+              </label>
+              <input 
+                type="password" 
+                class="form-control form-control-lg" 
+                id="password" 
+                name="password" 
+                [(ngModel)]="password"
+                (focus)="passwordFocused = true; closeRecoveryPanels()"
+                (blur)="passwordFocused = false"
+                placeholder="Enter your password"
+                required>
+            </div>
+            
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary btn-lg fw-semibold">
+                <i class="bi bi-box-arrow-in-right me-2"></i>
+                Login
+              </button>
+            </div>
+          </form>
+          
+          <div *ngIf="errorMessage" class="alert alert-danger mt-3 d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <div>{{ errorMessage }}</div>
+          </div>
+          
+          <div class="text-center mt-4">
+            <div class="d-flex flex-column gap-1 mb-3">
+              <a class="text-decoration-none" (click)="openForgotPassword()">
+                <i class="bi bi-key me-1"></i> Forgot password?
+              </a>
+            </div>
+
+            <!-- Forgot Password Panel (requests email with reset link) -->
+            <div *ngIf="showForgotPassword" class="alert alert-secondary text-start">
+              <div class="mb-2 fw-semibold">Request password reset</div>
+              <div class="mb-2">
+                <input class="form-control" [(ngModel)]="resetIdentifier" placeholder="Enter your account email" name="resetIdentifier" />
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-primary" (click)="submitForgotPassword()">Send reset email</button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="showForgotPassword=false">Cancel</button>
+              </div>
+              <div class="small mt-2" *ngIf="recoveryMessage">{{ recoveryMessage }}</div>
+            </div>
+
+            <p class="mb-2">
+              Don't have an account? 
+              <a routerLink="/register" class="text-decoration-none fw-semibold">
+                Create one here
+              </a>
+            </p>
+            <small class="text-muted">
+              Need help? Contact your system administrator
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,213 @@
+<div class="dashboard-wrapper">
+  <header class="topbar d-flex align-items-center justify-content-between px-3">
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-light d-lg-none" (click)="toggleSidebar()">
+        <i class="bi bi-list"></i>
+      </button>
+      <span class="topbar-title">{{ currentDashboardLabel }} Dashboard</span>
+    </div>
+
+    <ul class="nav nav-pills small d-none d-md-flex">
+      <li *ngFor="let d of dashboards" class="nav-item">
+        <button class="nav-link" [class.active]="selectedDashboard === d.key" (click)="selectDashboard(d.key)">
+          <i class="bi me-1"
+             [ngClass]="{
+               'bi-shop': d.key === 'store-manager',
+               'bi-briefcase': d.key === 'department-admin',
+               'bi-star': d.key === 'super-admin'
+             }"></i>
+          {{ d.label }}
+        </button>
+      </li>
+    </ul>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" [class.open]="mobileSidebarOpen">
+      <div class="sidebar-header">
+        <div class="fw-semibold small text-uppercase opacity-75">{{ currentDashboardLabel }} Menu</div>
+      </div>
+      <nav class="sidebar-menu list-group list-group-flush">
+        <button *ngFor="let s of sections"
+                class="list-group-item list-group-item-action d-flex align-items-center sidebar-item"
+                [class.active]="selected === s.key" (click)="select(s.key)">
+          <i class="bi me-2" [ngClass]="s.icon"></i>
+          {{ s.label }}
+        </button>
+      </nav>
+
+      <div class="px-3 py-2 border-top d-lg-none">
+        <div class="form-label small mb-1">Switch dashboard</div>
+        <select class="form-select form-select-sm" [(ngModel)]="selectedDashboard" (ngModelChange)="selectDashboard($event)">
+          <option *ngFor="let d of dashboards" [value]="d.key">{{ d.label }}</option>
+        </select>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="mb-0">{{ getSectionLabel(selected) }}</h5>
+          <span class="badge text-bg-light text-secondary">{{ currentDashboardLabel }}</span>
+        </div>
+        <div class="d-md-none">
+          <ul class="nav nav-pills small">
+            <li *ngFor="let d of dashboards" class="nav-item">
+              <button class="nav-link" [class.active]="selectedDashboard === d.key" (click)="selectDashboard(d.key)">
+                {{ d.label }}
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <ng-container *ngIf="selected === 'inventory'">
+          <div class="col-12 col-sm-6 col-xl-3" *ngFor="let card of inventoryCards">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-center">
+                  <div class="flex-shrink-0">
+                    <div class="rounded-3 p-3" [ngClass]="card.bg">
+                      <i [ngClass]="['bi', card.icon, 'fs-4', card.text]"></i>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h6 class="card-title text-muted mb-1">{{ card.title }}</h6>
+                    <h3 class="mb-0">{{ card.value }}</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="selected === 'asset-return'">
+          <div class="col-12 col-sm-6 col-xl-3" *ngFor="let card of returnCards">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-center">
+                  <div class="flex-shrink-0">
+                    <div class="rounded-3 p-3" [ngClass]="card.bg">
+                      <i [ngClass]="['bi', card.icon, 'fs-4', card.text]"></i>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h6 class="card-title text-muted mb-1">{{ card.title }}</h6>
+                    <h3 class="mb-0">{{ card.value }}</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="selected === 'recent-transactions'">
+          <div class="col-12 col-sm-6 col-xl-3" *ngFor="let card of transactionCards">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-center">
+                  <div class="flex-shrink-0">
+                    <div class="rounded-3 p-3" [ngClass]="card.bg">
+                      <i [ngClass]="['bi', card.icon, 'fs-4', card.text]"></i>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h6 class="card-title text-muted mb-1">{{ card.title }}</h6>
+                    <h3 class="mb-0">{{ card.value }}</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Department Admin: Assign Locations -->
+        <ng-container *ngIf="selected === 'assign-locations'">
+          <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+                <h6 class="mb-3">Assign Location to Employee</h6>
+                <form (ngSubmit)="submitAssign()" class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">Employee ID</label>
+                    <input class="form-control" [(ngModel)]="assign.employeeId" name="employeeId" placeholder="e.g., 123"/>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">Location</label>
+                    <select class="form-select" [(ngModel)]="assign.locationId" name="locationId">
+                      <option value="" disabled>Select location</option>
+                      <option *ngFor="let loc of locations" [value]="loc.id">{{ loc.name }}</option>
+                    </select>
+                  </div>
+                  <div class="col-12 d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" (click)="loadLocationsIfNeeded()" [disabled]="isLoadingLocations">
+                      <span *ngIf="!isLoadingLocations"><i class="bi bi-arrow-clockwise me-1"></i>Load Locations</span>
+                      <span *ngIf="isLoadingLocations"><i class="bi bi-hourglass-split me-1"></i>Loading...</span>
+                    </button>
+                    <button type="submit" class="btn btn-primary">Assign</button>
+                  </div>
+                  <div class="col-12" *ngIf="assignMessage">
+                    <div class="alert alert-success py-2 mb-0">{{ assignMessage }}</div>
+                  </div>
+                  <div class="col-12" *ngIf="assignError">
+                    <div class="alert alert-danger py-2 mb-0">{{ assignError }}</div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <h6 class="mb-0">Available Locations</h6>
+                  <button class="btn btn-sm btn-outline-secondary" (click)="loadLocationsIfNeeded()" [disabled]="isLoadingLocations">
+                    <i class="bi bi-arrow-clockwise"></i>
+                  </button>
+                </div>
+                <div *ngIf="!locations.length && !isLoadingLocations" class="text-muted small">No locations found.</div>
+                <ul class="list-group small" *ngIf="locations.length">
+                  <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let loc of locations">
+                    <span>{{ loc.name }}</span>
+                    <span class="badge text-bg-light">{{ loc.department || 'N/A' }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="selected !== 'inventory' && selected !== 'asset-return' && selected !== 'recent-transactions' && selected !== 'assign-locations'">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+                <h6 class="mb-1">{{ getSectionLabel(selected) }}</h6>
+                <div class="text-muted small">Select a menu item to view its task content.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-xl-3" *ngFor="let card of genericCards">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-center">
+                  <div class="flex-shrink-0">
+                    <div class="rounded-3 p-3" [ngClass]="card.bg">
+                      <i [ngClass]="['bi', card.icon, 'fs-4', card.text]"></i>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h6 class="card-title text-muted mb-1">{{ card.title }}</h6>
+                    <h3 class="mb-0">{{ card.value }}</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </main>
+  </div>
+</div>
