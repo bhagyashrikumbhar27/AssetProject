@@ -1,17 +1,12 @@
 package com.greentin.assetApp.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class ResetPasswordRequest {
+public class ForgotPasswordRequest {
+    @Email
     @NotBlank
     private String email;
-
-    @NotBlank
-    private String newPassword;
-
-    public String getToken() {
-        return "";
-    }
 }

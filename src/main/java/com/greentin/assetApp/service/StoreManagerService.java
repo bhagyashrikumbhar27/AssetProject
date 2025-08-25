@@ -16,4 +16,9 @@ public interface StoreManagerService {
     void addStock(AddStockRequestDto request);
 
     List<TransactionDto> getTransactions();
+
+    void createAsset(CreateAssetRequestDto request);
+
+    // Dashboard: show all locations for manager context
+    java.util.List<com.greentin.assetApp.entity.Location> getLocations();
 }

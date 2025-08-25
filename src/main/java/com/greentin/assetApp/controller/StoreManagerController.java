@@ -44,4 +44,15 @@ public class StoreManagerController {
     public List<TransactionDto> getTransactions() {
         return service.getTransactions();
     }
+
+    @PostMapping("/create-asset")
+    public void createAsset(@RequestBody CreateAssetRequestDto request) {
+        service.createAsset(request);
+    }
+
+    // Locations for Store Manager dashboard
+    @GetMapping("/locations")
+    public java.util.List<com.greentin.assetApp.entity.Location> getLocations() {
+        return service.getLocations();
+    }
 }

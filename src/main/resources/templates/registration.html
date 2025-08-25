@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome</title>
+    <style>
+        body{font-family:Arial,Helvetica,sans-serif;color:#222}
+        .card{max-width:640px;margin:0 auto;border:1px solid #eee;border-radius:8px;overflow:hidden}
+        .header{background:#0b6ef6;color:#fff;padding:16px 20px}
+        .content{padding:20px}
+        .muted{color:#666}
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="header">Welcome to Asset Management System</div>
+    <div class="content">
+        <p>Dear <strong th:text="${name}">User</strong>,</p>
+        <p>Your registration is successful.</p>
+        <p>
+            <strong>Name:</strong> <span th:text="${name}">Name</span><br/>
+            <strong>Email:</strong> <span th:text="${email}">email@domain</span><br/>
+            <strong>Role:</strong> <span th:text="${role}">ROLE</span><br/>
+            <strong>Department:</strong> <span th:text="${department}">Department</span>
+        </p>
+        <p class="muted">You can now log in and use the system.</p>
+        <p>Best regards,<br/>Asset Management System</p>
+    </div>
+</div>
+</body>
+</html>

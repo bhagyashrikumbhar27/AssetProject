@@ -6,9 +6,11 @@ import com.greentin.assetApp.dto.DepartmentDto;
 import com.greentin.assetApp.entity.User;
 import com.greentin.assetApp.entity.Role;
 import com.greentin.assetApp.entity.Department;
+import com.greentin.assetApp.entity.Location;
 import com.greentin.assetApp.repository.UserRepository;
 import com.greentin.assetApp.repository.RoleRepository;
 import com.greentin.assetApp.repository.DepartmentRepository;
+import com.greentin.assetApp.repository.LocationRepository;
 import com.greentin.assetApp.service.SuperAdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,8 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final DepartmentRepository departmentRepository;
+    private final LocationRepository locationRepository;
+    private final EmailService emailService;
 
     // 🔹 Users
     @Override
@@ -35,12 +39,28 @@ public class SuperAdminServiceImpl implements SuperAdminService {
 
     @Override
     public UserDto createUser(UserDto userDto) {
+        // Ensure email is normalized and role uppercased by entity setter
+        String email = userDto.getEmail() == null ? null : userDto.getEmail().trim().toLowerCase();
+
+        // Save user with password provided by Super Admin (kept as-is because encoder is plain)
         User user = User.builder()
                 .name(userDto.getName())
-                .email(userDto.getEmail())
+                .email(email)
                 .role(userDto.getRole())
+                .department(userDto.getDepartment())
+                .password(userDto.getPassword())
                 .build();
-        return new UserDto(userRepository.save(user));
+
+        User saved = userRepository.save(user);
+        // Send welcome email to the newly created user (HTML template)
+        try {
+            emailService.sendRegistrationNotification(saved);
+        } catch (Exception ex) {
+            // Log-only: do not block user creation if email fails
+            org.slf4j.LoggerFactory.getLogger(SuperAdminServiceImpl.class)
+                    .warn("Failed to send registration email to {}", saved.getEmail(), ex);
+        }
+        return new UserDto(saved);
     }
 
     @Override
@@ -126,5 +146,11 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     @Override
     public void deleteDepartment(Long id) {
         departmentRepository.deleteById(id);
+    }
+
+    // 🔹 Locations (for Super Admin dashboard)
+    @Override
+    public java.util.List<Location> getAllLocations() {
+        return locationRepository.findAll();
     }
 }

@@ -22,6 +22,7 @@ public class DepartmentAdminService {
     private final LocationRepository locationRepository;
     private final AssetRepository assetRepository;
     private final AssetRequestRepository assetRequestRepository;
+    private final com.greentin.assetApp.service.EmailService emailService;
 
     private String currentAdminDepartment() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -33,18 +34,18 @@ public class DepartmentAdminService {
         return admin.getDepartment();
     }
 
-    // Employees in current department
+    // --- Employees in current department ---
     public List<User> listDepartmentEmployees() {
         return userRepository.findByDepartment(currentAdminDepartment());
     }
 
-    // Pending requests in current department
+    // --- Pending requests in current department ---
     public List<AssetRequest> listPendingRequests() {
         return assetRequestRepository.findByUserDepartmentAndStatus(
                 currentAdminDepartment(), AssetRequest.Status.PENDING);
     }
 
-    // Request history
+    // --- Request history ---
     public List<AssetRequest> listHistory() {
         return assetRequestRepository.findByUserDepartment(currentAdminDepartment())
                 .stream()
@@ -52,7 +53,7 @@ public class DepartmentAdminService {
                 .toList();
     }
 
-    // Count requests from an employee
+    // --- Count requests from an employee ---
     public long countRequestsFromEmployee(Long employeeUserId) {
         User employee = userRepository.findById(employeeUserId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
@@ -62,29 +63,48 @@ public class DepartmentAdminService {
         return assetRequestRepository.countByUserId(employeeUserId);
     }
 
-    // Approve request
+    // --- Approve request ---
     public void approve(Long requestId) {
-        AssetRequest request = assetRequestRepository.findById(requestId)
+        AssetRequest request = assetRequestRepository.findByIdWithUser(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
         if (!request.getUser().getDepartment().equals(currentAdminDepartment())) {
             throw new RuntimeException("Cross-department access denied");
         }
         request.setStatus(AssetRequest.Status.APPROVED);
-        assetRequestRepository.save(request);
+        AssetRequest savedRequest = assetRequestRepository.save(request);
+
+        // Send approval notification to employee
+        emailService.sendRequestStatusNotification(savedRequest, "APPROVED");
     }
 
-    // Reject request
+    // --- Reject request ---
     public void reject(Long requestId) {
-        AssetRequest request = assetRequestRepository.findById(requestId)
+        AssetRequest request = assetRequestRepository.findByIdWithUser(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
         if (!request.getUser().getDepartment().equals(currentAdminDepartment())) {
             throw new RuntimeException("Cross-department access denied");
         }
         request.setStatus(AssetRequest.Status.REJECTED);
-        assetRequestRepository.save(request);
+        AssetRequest savedRequest = assetRequestRepository.save(request);
+
+        // Send rejection notification to employee
+        emailService.sendRequestStatusNotification(savedRequest, "REJECTED");
     }
 
-    // Locations
+    // --- Notify employee manually ---
+    public void notifyEmployee(Long requestId, String status) {
+        AssetRequest request = assetRequestRepository.findByIdWithUser(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+        if (!request.getUser().getDepartment().equals(currentAdminDepartment())) {
+            throw new RuntimeException("Cross-department access denied");
+        }
+        String effectiveStatus = (status == null || status.isBlank())
+                ? (request.getStatus() == null ? "UPDATED" : request.getStatus().name())
+                : status.toUpperCase();
+        emailService.sendRequestStatusNotification(request, effectiveStatus);
+    }
+
+    // --- Locations ---
     public List<Location> listLocations() {
         return locationRepository.findByDepartment(currentAdminDepartment());
     }
@@ -114,14 +134,14 @@ public class DepartmentAdminService {
         locationRepository.delete(db);
     }
 
-    // Department assets
+    // --- Department assets ---
     public List<?> listDepartmentAssets() {
         return assetRepository.findByDepartment(currentAdminDepartment());
     }
 
-    // Department requests with optional filters
-    public List<AssetRequest> listDepartmentRequests(String status, Long employeeUserId) {
-        String dept = currentAdminDepartment();
+    // --- Department requests with optional filters ---
+    public List<AssetRequest> listDepartmentRequests(String status, Long employeeUserId, String department) {
+        String dept = (department != null && !department.isBlank()) ? department : currentAdminDepartment();
         if (status != null && employeeUserId != null) {
             return assetRequestRepository.findByUserDepartmentAndStatusAndUserId(
                     dept, AssetRequest.Status.valueOf(status.toUpperCase()), employeeUserId);
@@ -135,7 +155,7 @@ public class DepartmentAdminService {
         }
     }
 
-    // Employee-wise request counts
+    // --- Employee-wise request counts ---
     public List<EmployeeRequestCount> employeeRequestCounts() {
         return assetRequestRepository.countByEmployeeInDepartment(currentAdminDepartment());
     }

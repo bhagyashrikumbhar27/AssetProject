@@ -21,9 +21,11 @@ public class AssetTransaction {
     private Long employeeId;
 
     @Enumerated(EnumType.STRING)
-    private TxnType txnType;
+    private TxnType txnType;   // ✅ uses the global enum
 
     private LocalDateTime txnDate;
 
     private String notes;
 }
+
+

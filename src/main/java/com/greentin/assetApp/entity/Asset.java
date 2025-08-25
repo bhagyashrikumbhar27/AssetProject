@@ -16,4 +16,8 @@ public class Asset {
 
     private String name;
     private String department;
+
+    // ✅ Add these two fields
+    private String type;
+    private String status;
 }

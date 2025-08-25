@@ -22,7 +22,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         // Prefix ROLE_ to follow Spring Security convention
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
-                user.getPassword(),
+                user.getPassword(), // immediate login with stored password
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
         );
     }

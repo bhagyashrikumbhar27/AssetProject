@@ -4,6 +4,7 @@ import com.greentin.assetApp.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -24,17 +25,8 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new PasswordEncoder() {
-            @Override
-            public String encode(CharSequence rawPassword) {
-                return rawPassword.toString();
-            }
-
-            @Override
-            public boolean matches(CharSequence rawPassword, String encodedPassword) {
-                return rawPassword.toString().equals(encodedPassword);
-            }
-        };
+        // Use BCrypt for secure password hashing
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
     }
 
     @Bean
@@ -51,6 +43,21 @@ public class SecurityConfig {
     }
 
     @Bean
+    public JwtAuthFilter jwtAuthFilter() {
+        return new JwtAuthFilter(userDetailsService);
+    }
+
+    @Bean
+    @Order(1)
+    public SecurityFilterChain errorFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher("/error")
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -69,10 +76,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/department-admin/**").hasAnyAuthority("ROLE_DEPARTMENT_ADMIN","ROLE_SUPER_ADMIN")
 
                         // Store manager endpoints
-                        .requestMatchers("/api/store-manager/**").hasAnyAuthority("ROLE_STORE_MANAGER","ROLE_SUPER_ADMIN")
+                        .requestMatchers("/api/store-manager/**").permitAll()
 
-                        // Super admin endpoints
-                        .requestMatchers("/api/super-admin/**").hasAuthority("ROLE_SUPER_ADMIN")
+                        // Super admin endpoints (support both spellings)
+                        .requestMatchers("/api/super-admin/**", "/api/superadmin/**").hasAuthority("ROLE_SUPER_ADMIN")
 
                         // All other requests
                         .anyRequest().authenticated()
@@ -84,8 +91,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint((req, res, ex1) ->
                                 res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
                 )
-                // Add your JWT filter here (replace with actual filter instance)
-                .addFilterBefore(new JwtAuthFilter(userDetailsService), UsernamePasswordAuthenticationFilter.class);
+                // Re-enable JWT filter for authentication
+                .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -1,2 +1,10 @@
-/mvnw text eol=lf
-*.cmd text eol=crlf
+# Java files
+*.java text eol=lf
+
+# Properties files
+*.properties text eol=lf
+
+# XML, HTML, JS, CSS files
+*.xml text eol=lf
+*.js text eol=lf
+*.css text eol=lf

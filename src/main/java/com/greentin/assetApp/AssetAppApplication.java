@@ -18,6 +18,7 @@ public class AssetAppApplication {
     private long jwtExpirationMs;
 
     public static void main(String[] args) {
+        // spring-dotenv auto-loads .env on the classpath; no manual code needed
         SpringApplication.run(AssetAppApplication.class, args);
     }
 

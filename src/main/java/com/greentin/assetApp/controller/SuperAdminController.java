@@ -79,4 +79,10 @@ public class SuperAdminController {
     public void deleteDepartment(@PathVariable Long id) {
         superAdminService.deleteDepartment(id);
     }
+
+    // 🔹 Locations (visible in Super Admin dashboard)
+    @GetMapping("/locations")
+    public List<com.greentin.assetApp.entity.Location> getAllLocations() {
+        return superAdminService.getAllLocations();
+    }
 }

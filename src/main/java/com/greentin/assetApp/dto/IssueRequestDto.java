@@ -12,6 +12,7 @@ import java.time.LocalDate;
 public class IssueRequestDto {
     private Long assetId;
     private Long employeeId;
+    private Integer quantity;
     private LocalDate issueDate;
     private String notes;
 }

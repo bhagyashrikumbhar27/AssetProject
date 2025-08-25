@@ -6,6 +6,8 @@ import com.greentin.assetApp.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.stream.Stream;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,6 +18,7 @@ public class StoreManagerServiceImpl implements StoreManagerService {
 
     private final StoreAssetRepository assetRepo;
     private final AssetTransactionRepository txnRepo;
+    private final LocationRepository locationRepository;
 
     @Override
     public StoreStatsDto getStoreStats() {
@@ -116,5 +119,21 @@ public class StoreManagerServiceImpl implements StoreManagerService {
                         .notes(t.getNotes())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void createAsset(CreateAssetRequestDto request) {
+        StoreAsset asset = StoreAsset.builder()
+                .name(request.getName())
+                .model(request.getModel())
+                .quantity(request.getQuantity())
+                .status(request.getQuantity() < 5 ? AssetStatus.LOW_STOCK : AssetStatus.AVAILABLE)
+                .build();
+        assetRepo.save(asset);
+    }
+
+    @Override
+    public List<Location> getLocations() {
+        return locationRepository.findAll();
     }
 }

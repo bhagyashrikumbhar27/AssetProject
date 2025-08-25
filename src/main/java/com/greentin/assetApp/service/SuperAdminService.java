@@ -24,4 +24,7 @@ public interface SuperAdminService {
     DepartmentDto createDepartment(DepartmentDto departmentDto);
     DepartmentDto updateDepartment(Long id, DepartmentDto departmentDto);
     void deleteDepartment(Long id);
+
+    // 🔹 Locations (visible in Super Admin dashboard)
+    java.util.List<com.greentin.assetApp.entity.Location> getAllLocations();
 }

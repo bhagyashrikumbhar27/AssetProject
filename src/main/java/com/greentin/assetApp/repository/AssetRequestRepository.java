@@ -8,6 +8,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Optional;
+
 import java.util.List;
 
 public interface AssetRequestRepository extends JpaRepository<AssetRequest, Long> {
@@ -16,15 +18,19 @@ public interface AssetRequestRepository extends JpaRepository<AssetRequest, Long
     List<AssetRequest> findByUserId(Long userId);
 
     // Get all requests by department
+    @Query("SELECT r FROM AssetRequest r JOIN FETCH r.user u WHERE u.department = :department")
     List<AssetRequest> findByUserDepartment(String department);
 
     // Get requests by department + status
+    @Query("SELECT r FROM AssetRequest r JOIN FETCH r.user u WHERE u.department = :department AND r.status = :status")
     List<AssetRequest> findByUserDepartmentAndStatus(String department, AssetRequest.Status status);
 
     // Get requests by department + user
+    @Query("SELECT r FROM AssetRequest r JOIN FETCH r.user u WHERE u.department = :department AND u.id = :userId")
     List<AssetRequest> findByUserDepartmentAndUserId(String department, Long userId);
 
     // Get requests by department + status + user
+    @Query("SELECT r FROM AssetRequest r JOIN FETCH r.user u WHERE u.department = :department AND r.status = :status AND u.id = :userId")
     List<AssetRequest> findByUserDepartmentAndStatusAndUserId(String department, AssetRequest.Status status, Long userId);
 
     // Count requests per employee in a department (for dashboard)
@@ -44,4 +50,8 @@ public interface AssetRequestRepository extends JpaRepository<AssetRequest, Long
     List<AssetRequest> findByUser(User user);
 
     long countByUserId(Long employeeUserId);
+
+    // Custom query to ensure user is fetched with the request
+    @Query("SELECT r FROM AssetRequest r JOIN FETCH r.user WHERE r.id = :requestId")
+    Optional<AssetRequest> findByIdWithUser(Long requestId);
 }

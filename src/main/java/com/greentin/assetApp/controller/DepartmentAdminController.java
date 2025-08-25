@@ -51,6 +51,14 @@ public class DepartmentAdminController {
         return ResponseEntity.ok(new ApiResponse(true, "Request rejected", null));
     }
 
+    // --- Notify employee about a request status (manual trigger) ---
+    @PostMapping("/requests/{requestId}/notify")
+    public ResponseEntity<ApiResponse> notifyEmployee(@PathVariable Long requestId,
+                                                      @RequestParam(required = false) String status) {
+        departmentAdminService.notifyEmployee(requestId, status);
+        return ResponseEntity.ok(new ApiResponse(true, "Notification sent", null));
+    }
+
     // --- Department locations ---
     @GetMapping("/locations")
     public ResponseEntity<List<Location>> getLocations() {
@@ -84,9 +92,10 @@ public class DepartmentAdminController {
     @GetMapping("/requests")
     public ResponseEntity<ApiResponse> listDepartmentRequests(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long userId
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String department
     ) {
-        var result = departmentAdminService.listDepartmentRequests(status, userId);
+        var result = departmentAdminService.listDepartmentRequests(status, userId, department);
         return ResponseEntity.ok(ApiResponse.success("Requests fetched", result));
     }
 

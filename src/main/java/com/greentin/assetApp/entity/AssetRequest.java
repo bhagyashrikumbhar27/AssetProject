@@ -25,6 +25,7 @@ public class AssetRequest {
 
     private String justification;
 
+
     @CreationTimestamp
     @Column(name = "request_date", updatable = false)
     private LocalDateTime requestDate;
