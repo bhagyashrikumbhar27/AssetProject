@@ -14,6 +14,7 @@ import com.greentin.assetApp.repository.LocationRepository;
 import com.greentin.assetApp.service.SuperAdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     private final DepartmentRepository departmentRepository;
     private final LocationRepository locationRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     // 🔹 Users
     @Override
@@ -39,24 +41,46 @@ public class SuperAdminServiceImpl implements SuperAdminService {
 
     @Override
     public UserDto createUser(UserDto userDto) {
-        // Ensure email is normalized and role uppercased by entity setter
-        String email = userDto.getEmail() == null ? null : userDto.getEmail().trim().toLowerCase();
+        // Validate
+        if (userDto.getEmail() == null || userDto.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+        if (userDto.getRole() == null || userDto.getRole().isBlank()) {
+            throw new IllegalArgumentException("Role is required");
+        }
 
-        // Save user with password provided by Super Admin (kept as-is because encoder is plain)
+        String email = userDto.getEmail().trim().toLowerCase();
+
+        // Duplicate check
+        if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
+            throw new IllegalStateException("Email already exists");
+        }
+
+        // Department rule: SUPER_ADMIN may omit; others must provide
+        boolean isSuperAdmin = userDto.getRole().trim().equalsIgnoreCase("SUPER_ADMIN");
+        if (!isSuperAdmin && (userDto.getDepartment() == null || userDto.getDepartment().isBlank())) {
+            throw new IllegalArgumentException("Department is required for non SUPER_ADMIN users");
+        }
+
+        // Encode password
+        String encodedPassword = passwordEncoder.encode(userDto.getPassword());
+
         User user = User.builder()
                 .name(userDto.getName())
                 .email(email)
                 .role(userDto.getRole())
                 .department(userDto.getDepartment())
-                .password(userDto.getPassword())
+                .password(encodedPassword)
                 .build();
 
         User saved = userRepository.save(user);
-        // Send welcome email to the newly created user (HTML template)
+        // Send welcome email (non-blocking)
         try {
             emailService.sendRegistrationNotification(saved);
         } catch (Exception ex) {
-            // Log-only: do not block user creation if email fails
             org.slf4j.LoggerFactory.getLogger(SuperAdminServiceImpl.class)
                     .warn("Failed to send registration email to {}", saved.getEmail(), ex);
         }

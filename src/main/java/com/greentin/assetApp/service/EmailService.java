@@ -49,7 +49,7 @@ public class EmailService {
             helper.setTo(newUser.getEmail());
             helper.setSubject("Welcome to Asset Management System");
 
-            // HTML Template
+            // HTML Template (fixed %% for CSS width)
             String htmlContent = """
                 <!DOCTYPE html>
                 <html lang="en">
@@ -62,9 +62,9 @@ public class EmailService {
                     .container { max-width: 600px; margin: 50px auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
                     h2 { color: #333; }
                     p { color: #555; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                    table { width: 100%%; border-collapse: collapse; margin-top: 15px; }
                     td { padding: 8px 10px; border-bottom: 1px solid #eee; }
-                    td.label { font-weight: bold; color: #555; width: 35%; }
+                    td.label { font-weight: bold; color: #555; width: 35%%; }
                 </style>
                 </head>
                 <body>
@@ -84,8 +84,14 @@ public class EmailService {
                 </div>
                 </body>
                 </html>
-                """.formatted(newUser.getName(), newUser.getName(), newUser.getEmail(),
-                    newUser.getRole(), newUser.getDepartment(), java.time.LocalDateTime.now());
+                """.formatted(
+                    newUser.getName(),
+                    newUser.getName(),
+                    newUser.getEmail(),
+                    newUser.getRole(),
+                    newUser.getDepartment(),
+                    java.time.LocalDateTime.now()
+            );
 
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
@@ -114,7 +120,7 @@ public class EmailService {
                 default -> "#007bff";
             };
 
-            // HTML Template
+            // HTML Template (fixed %% for CSS width)
             String htmlContent = """
                 <!DOCTYPE html>
                 <html lang="en">
@@ -147,13 +153,14 @@ public class EmailService {
                 </div>
                 </body>
                 </html>
-                """.formatted(bannerColor, status.toUpperCase(), request.getUser().getName(),
+                """.formatted(
+                    bannerColor, status.toUpperCase(), request.getUser().getName(),
                     request.getId(), request.getAssetType(), request.getPriority(),
-                    request.getJustification());
+                    request.getJustification()
+            );
 
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
-
             log.info("✅ Request status email sent to {}", request.getUser().getEmail());
 
         } catch (Exception e) {
@@ -202,7 +209,6 @@ public class EmailService {
 
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
-
             log.info("✅ Password reset email sent to {}", user.getEmail());
 
         } catch (Exception e) {
@@ -233,19 +239,19 @@ public class EmailService {
             log.warn("Email not configured. Skipping test email to {}", to);
             return;
         }
-        
+
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(getFromAddress());
             message.setTo(to);
             message.setSubject("Test Email from Asset Management System");
             message.setText("This is a test email to verify email configuration is working properly.\n\n" +
-                          "If you received this email, the email service is configured correctly.\n\n" +
-                          "Best regards,\nAsset Management System");
-            
+                    "If you received this email, the email service is configured correctly.\n\n" +
+                    "Best regards,\nAsset Management System");
+
             mailSender.send(message);
             log.info("✅ Test email sent successfully to {}", to);
-            
+
         } catch (Exception e) {
             log.error("❌ Failed to send test email to {}: {}", to, e.getMessage());
             throw new RuntimeException("Failed to send test email: " + e.getMessage());

@@ -25,8 +25,12 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Use BCrypt for secure password hashing
-        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+        // DelegatingPasswordEncoder with bcrypt as default
+        var delegating = (org.springframework.security.crypto.password.DelegatingPasswordEncoder)
+                org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        // Fallback for legacy hashes without {id} prefix (e.g., older bcrypt hashes)
+        delegating.setDefaultPasswordEncoderForMatches(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder());
+        return delegating;
     }
 
     @Bean
@@ -63,35 +67,21 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> {})
                 .authorizeHttpRequests(auth -> auth
-                        // Allow CORS preflight
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // Public endpoints
                         .requestMatchers("/api/auth/**", "/api/mail/**").permitAll()
-
-                        // Employee endpoints
                         .requestMatchers("/api/employee/**").hasAnyAuthority("ROLE_EMPLOYEE","ROLE_DEPARTMENT_ADMIN","ROLE_SUPER_ADMIN")
-
-                        // Department admin endpoints
                         .requestMatchers("/api/department-admin/**").hasAnyAuthority("ROLE_DEPARTMENT_ADMIN","ROLE_SUPER_ADMIN")
-
-                        // Store manager endpoints
                         .requestMatchers("/api/store-manager/**").permitAll()
-
-                        // Super admin endpoints (support both spellings)
                         .requestMatchers("/api/super-admin/**", "/api/superadmin/**").hasAuthority("ROLE_SUPER_ADMIN")
-
-                        // All other requests
                         .anyRequest().authenticated()
                 )
-                .httpBasic(basic -> basic.disable()) // Disable browser popup
+                .httpBasic(basic -> basic.disable())
                 .formLogin(form -> form.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, ex1) ->
                                 res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
                 )
-                // Re-enable JWT filter for authentication
                 .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
