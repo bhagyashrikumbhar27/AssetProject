@@ -122,16 +122,22 @@ export class LocationService {
     });
   }
 
-  // Assign location to employee (department-admin only); invisible to other roles
+  // Assign location to employee (department-admin only): POST /api/department-admin/employees/{userId}/location/{locationId}
   assignLocationToEmployee(employeeId: string | number, locationId: string | number): Observable<void> {
     const token = localStorage.getItem('token');
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) });
-    const url = `${this.apiUrl}/department-admin/employees/${employeeId}/assign-location`;
-    const body = { locationId };
+    // Do NOT set Content-Type when sending no body; some servers 500 on empty JSON bodies
+    const headers = new HttpHeaders({ ...(token ? { Authorization: `Bearer ${token}` } : {}) });
+    const url = `${this.apiUrl}/department-admin/employees/${employeeId}/location/${locationId}`;
     return new Observable<void>(subscriber => {
-      this.http.post(url, body, { headers, withCredentials: false }).subscribe({
+      this.http.post(url, null, { headers, withCredentials: false }).subscribe({
         next: () => { subscriber.next(); subscriber.complete(); },
-        error: (err) => subscriber.error(err)
+        error: () => {
+          // Fallback: some backends use PUT for idempotent assignment
+          this.http.put(url, null, { headers, withCredentials: false }).subscribe({
+            next: () => { subscriber.next(); subscriber.complete(); },
+            error: (finalErr) => subscriber.error(finalErr)
+          });
+        }
       });
     });
   }

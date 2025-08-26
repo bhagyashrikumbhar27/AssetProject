@@ -7,6 +7,7 @@ import { User, UserRole } from '../../models/user.model';
 import { AssetRequestService } from '../../services/asset-request.service';
 import { AssetRequest } from '../../models/asset-request.model';
 import { LocationService } from '../../services/location.service';
+import { LocationResponse } from '../../models/location.model';
 import { SuperAdminService, UserDto, RoleDto, DepartmentDto } from '../../services/super-admin.service';
 import { forkJoin, of, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -32,13 +33,25 @@ export class DepartmentAdminDashboardComponent implements OnInit, OnDestroy {
   departmentAdminName: string = '';
   
   // Locations for the department
-  locations: { id?: string | number; name?: string; department?: string }[] = [];
+  locations: { id?: string | number; name?: string; department?: string; approvals?: number; pending?: number; approvedEmployees?: string[]; approvedEmployeeIds?: (string | number)[] }[] = [];
   newLocationName: string = '';
   // Location assignment state
   selectedEmployeeId: number | null = null;
   selectedLocationId: string | number | null = null;
   assignSuccess: string = '';
   assignError: string = '';
+
+  // Per-employee input for direct location ID assignment
+  locationIdForEmployee: Record<string, string | number> = {};
+
+  // Last location created (to show ID for direct assignment)
+  lastCreatedLocation: LocationResponse | null = null;
+
+  // Quick assign inputs
+  quickAssignEmployeeId: number | null = null;
+  quickAssignLocationId: number | null = null;
+
+
 
   // Stats for the department
   stats = {
@@ -370,6 +383,7 @@ export class DepartmentAdminDashboardComponent implements OnInit, OnDestroy {
     this.loadDepartmentTotals();
     this.loadDepartmentRequests();
     this.loadLocations(); // ensure department locations are shown
+    this.loadLocationApprovalStats(); // compute approval metrics per location
 
     // Load global overview (backend with fallback)
     this.loadGlobalOverview();
@@ -432,6 +446,44 @@ export class DepartmentAdminDashboardComponent implements OnInit, OnDestroy {
 
     // Clean up event listener
     window.removeEventListener('departmentRequestsUpdated', this.setupRequestUpdateListener);
+  }
+
+  // Combine locations with approval stats for the department
+  loadLocationApprovalStats() {
+    try {
+      // Use cached department requests if available; otherwise compute from current view
+      const deptKey = this.getDeptKey(this.departmentName);
+      const raw = localStorage.getItem(deptKey);
+      const requests: any[] = raw ? JSON.parse(raw) : (this.assetRequests || []);
+      const byLoc: Record<string, { approvals: number; pending: number; employees: Set<string>; employeeIds: Set<string | number> }> = {};
+      for (const r of requests) {
+        const status = (r.status || '').toLowerCase();
+        // Try to read location name from multiple shapes
+        const locName = (
+          r.employeeLocation ||
+          r.user?.locationName ||
+          (typeof r.user?.location === 'string' ? r.user?.location : r.user?.location?.name) ||
+          ''
+        ).toString();
+        if (!locName) continue;
+        if (!byLoc[locName]) byLoc[locName] = { approvals: 0, pending: 0, employees: new Set<string>(), employeeIds: new Set<string | number>() };
+        const empId = r.employeeId || r.user?.id;
+        const display = (r.employeeName || r.user?.name || (empId ? `#${empId}` : '')).toString();
+        if (status === 'approved') {
+          byLoc[locName].approvals++;
+          if (display.trim()) byLoc[locName].employees.add(display);
+          if (empId != null) byLoc[locName].employeeIds.add(empId);
+        } else if (status === 'pending') {
+          byLoc[locName].pending++;
+        }
+      }
+      // Merge into current locations model
+      this.locations = (this.locations || []).map(loc => {
+        const key = (loc.name || '').toString();
+        const stats = byLoc[key] || { approvals: 0, pending: 0, employees: new Set<string>(), employeeIds: new Set<string | number>() };
+        return { ...loc, approvals: stats.approvals, pending: stats.pending, approvedEmployees: Array.from(stats.employees), approvedEmployeeIds: Array.from(stats.employeeIds) };
+      });
+    } catch {}
   }
 
   loadDepartmentUsers() {
@@ -508,6 +560,7 @@ export class DepartmentAdminDashboardComponent implements OnInit, OnDestroy {
           employeeId: Number(r.user?.id ?? 0),
           employeeName: r.user?.name || String(r.user?.id ?? ''),
           employeeDepartment: r.user?.department || '',
+          employeeLocation: r.user?.locationName || r.user?.location?.name || r.user?.location || '',
           assetType: r.assetType,
           priority: r.priority,
           status: r.status,
@@ -525,6 +578,8 @@ export class DepartmentAdminDashboardComponent implements OnInit, OnDestroy {
           return acc;
         }, {} as Record<string, number>);
         this.calculateStats();
+        // Recompute per-location approval stats using enriched location field
+        this.loadLocationApprovalStats();
       },
       error: (error) => {
         console.error('Failed to load department requests from backend:', error);
@@ -544,6 +599,74 @@ export class DepartmentAdminDashboardComponent implements OnInit, OnDestroy {
     this.stats.rejectedRequests = this.assetRequests.filter(r => (r.status || '').toLowerCase() === 'rejected').length;
     this.stats.departmentUsers = this.departmentUsers.length;
     this.stats.activeUsers = this.departmentUsers.filter(u => u.isActive).length;
+  }
+
+  // Assign location to employee and refresh views (single unified implementation)
+  assignEmployeeLocation(empId: number | string | null, loc: { id?: string | number; name?: string }) {
+    this.assignError = '';
+    this.assignSuccess = '';
+
+    const employeeId = typeof empId === 'string' ? Number(empId) : (empId as number | null);
+    const locationId = loc?.id;
+
+    if (!employeeId || locationId == null || String(locationId).trim() === '') {
+      this.assignError = 'Please select a valid employee and enter a Location ID.';
+      setTimeout(() => (this.assignError = ''), 3000);
+      return;
+    }
+    this.selectedEmployeeId = null;
+
+    this.locationService.assignLocationToEmployee(employeeId, String(locationId)).subscribe({
+      next: () => {
+        this.assignSuccess = `Assigned ${loc.name || 'location'} (#${locationId}) to employee #${employeeId}`;
+        setTimeout(() => (this.assignSuccess = ''), 2500);
+        // Refresh data so other dashboards reflect latest location
+        this.loadDepartmentUsers();
+        this.loadDepartmentRequests();
+        // Optimistic update approved list overlay
+        this.loadLocationApprovalStats();
+        // Notify Super Admin dashboard to refresh users
+        this.superAdminService.triggerUsersUpdate();
+      },
+      error: (err) => {
+        console.error('Failed to assign location:', err);
+        const detail = (err?.error && typeof err.error === 'string') ? err.error : (err?.message || '');
+        this.assignError = `Failed to assign location${detail ? ': ' + detail : ''}`;
+        setTimeout(() => (this.assignError = ''), 4000);
+      }
+    });
+  }
+
+  // Copy to clipboard helper for location ID
+  copyLocationIdToClipboard(id: string | number | undefined) {
+    if (id == null) return;
+    try {
+      navigator.clipboard.writeText(String(id));
+      this.assignSuccess = `Copied location ID #${id}`;
+      setTimeout(() => (this.assignSuccess = ''), 1500);
+    } catch {
+      // Fallback for environments without clipboard API
+      const temp = document.createElement('input');
+      temp.value = String(id);
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      this.assignSuccess = `Copied location ID #${id}`;
+      setTimeout(() => (this.assignSuccess = ''), 1500);
+    }
+  }
+
+  // Quick assign handler
+  quickAssign() {
+    this.assignError = '';
+    this.assignSuccess = '';
+    if (!this.quickAssignEmployeeId || !this.quickAssignLocationId) {
+      this.assignError = 'Enter both Employee ID and Location ID.';
+      setTimeout(() => (this.assignError = ''), 2000);
+      return;
+    }
+    this.assignEmployeeLocation(this.quickAssignEmployeeId, { id: this.quickAssignLocationId, name: '' });
   }
 
   // Global overview: backend with fallback to local/mock
@@ -960,6 +1083,8 @@ export class DepartmentAdminDashboardComponent implements OnInit, OnDestroy {
         // If backend doesn't filter by department, filter on client
         const dept = (this.departmentName || '').toLowerCase();
         this.locations = (list || []).filter(l => (l.department || '').toLowerCase() === dept || !dept);
+        // After locations are loaded, recompute approval stats overlay
+        this.loadLocationApprovalStats();
       },
       error: (err) => {
         console.error('Failed to load locations', err);
@@ -972,8 +1097,9 @@ export class DepartmentAdminDashboardComponent implements OnInit, OnDestroy {
   createLocationForDepartment(name: string) {
     const payload = { name, department: this.departmentName };
     this.locationService.createLocation(payload).subscribe({
-      next: () => {
-        console.log('Location created:', payload);
+      next: (created) => {
+        // Show the created location with its ID for direct assignment
+        this.lastCreatedLocation = created || { name: payload.name, department: payload.department };
         this.newLocationName = '';
         this.loadLocations();
       },
@@ -983,63 +1109,7 @@ export class DepartmentAdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Assign a location to an employee via Super Admin API (or fallback)
-  assignEmployeeLocation(employeeId: number | null, loc: { id?: number | string; name?: string }) {
-    this.assignError = '';
-    this.assignSuccess = '';
-    const idNum = Number(employeeId);
-    if (!Number.isFinite(idNum)) {
-      this.assignError = 'Please select an employee';
-      setTimeout(() => (this.assignError = ''), 2000);
-      return;
-    }
 
-    // Build minimal update payload to set location
-    const dto: any = { location: String(loc?.name || '') };
-
-    // Call SuperAdminService.updateUser if available; otherwise update local AuthService
-    try {
-      const user = this.authService.getAllUsers().find(u => Number(u.id) === idNum);
-      if (user) {
-        const updated = { ...user, location: dto.location } as any;
-        // Persist locally
-        try { this.authService.updateUser(String(idNum), { location: dto.location } as any); } catch {}
-        // Optimistic UI update
-        const list = this.departmentUsers.map(u => (String(u.id) === String(idNum) ? { ...u, location: dto.location } as any : u));
-        this.departmentUsers = list;
-        // Notify dashboards to refresh
-        try { this.superAdminService.triggerUsersUpdate(); } catch {}
-      }
-    } catch {}
-
-    // Best-effort backend update via SuperAdminService
-    try {
-      // superAdminService expects full UserDto; fetch minimal existing and patch
-      const existing = this.superAdminService.convertToUserDto(
-        this.authService.getAllUsers().find(u => Number(u.id) === idNum) as any
-      );
-      const patchDto = { ...existing, location: dto.location } as any;
-      if (patchDto.id) {
-        this.superAdminService.updateUser(patchDto.id, patchDto).subscribe({
-          next: () => {
-            this.assignSuccess = `Assigned ${dto.location} to #${idNum}`;
-            setTimeout(() => (this.assignSuccess = ''), 2000);
-          },
-          error: () => {
-            // Keep optimistic change; surface soft warning
-            this.assignSuccess = `Assigned ${dto.location} (local)`;
-            setTimeout(() => (this.assignSuccess = ''), 2000);
-          }
-        });
-      } else {
-        this.assignSuccess = `Assigned ${dto.location} (local)`;
-        setTimeout(() => (this.assignSuccess = ''), 2000);
-      }
-    } catch {
-      this.assignSuccess = `Assigned ${dto.location} (local)`;
-      setTimeout(() => (this.assignSuccess = ''), 2000);
-    }
-  }
 
   // Check if we should use development mode (backend not available)
   private isBackendUnavailable(error: any): boolean {

@@ -11,6 +11,11 @@ export interface UserDto {
   email: string;
   role: string;
   department: string;
+  // New optional field from backend to carry location info
+  locationId?: number;
+  locationName?: string;
+  // Some backends may return a nested location object
+  location?: { id?: number; name?: string } | string;
   password?: string;
   isActive?: boolean;
   createdAt?: string;
@@ -184,7 +189,10 @@ export class SuperAdminService {
       email: userDto.email,
       role: userDto.role as any,
       department: userDto.department,
-      location: (userDto as any).location, // pass-through if backend provides it
+      // Prefer locationName; support nested or flat `location`; fallback to '-' if missing
+      location: (userDto.locationName
+        || (typeof userDto.location === 'string' ? userDto.location : userDto.location?.name)
+        || undefined),
       isActive: userDto.isActive ?? true,
       createdAt: userDto.createdAt ? new Date(userDto.createdAt) : new Date()
     };
@@ -199,10 +207,11 @@ export class SuperAdminService {
       email: user.email,
       role: user.role,
       department: user.department || '',
+      // Send display name if present for compatibility
+      ...(user.location ? { locationName: user.location } : {}),
       isActive: user.isActive,
       createdAt: user.createdAt?.toISOString(),
-      updatedAt: new Date().toISOString(),
-      ...(user as any).location ? { location: (user as any).location } as any : {}
+      updatedAt: new Date().toISOString()
     } as any;
   }
 }

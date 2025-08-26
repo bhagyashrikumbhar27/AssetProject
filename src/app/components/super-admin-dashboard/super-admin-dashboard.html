@@ -277,7 +277,7 @@
                   </td>
                   <td>{{ user.createdAt | date:'short' }}</td>
                   <td>
-                    <span class="badge bg-light text-dark">Total Requests {{ requestCounts[user.id] ?? 0 }}</span>
+                    <span class="badge bg-light text-dark">Total Requests {{ requestCounts[user.id] || 0 }}</span>
                   </td>
                   <td class="pe-3">
                     <div class="btn-group" role="group">
@@ -355,6 +355,59 @@
                 </nav>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions (with Employee Location) -->
+  <div class="row mt-4">
+    <div class="col-12 col-xl-8 mx-auto">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-clock-history me-2"></i>
+            Recent Transactions
+          </h5>
+          <small class="text-muted">From Store Manager</small>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="border-0 ps-3">#</th>
+                  <th class="border-0">Type</th>
+                  <th class="border-0">Employee</th>
+                  <th class="border-0">Asset</th>
+                  <th class="border-0">Location</th>
+                  <th class="border-0 pe-3">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let t of transactions">
+                  <td class="ps-3">#{{ t.id }}</td>
+                  <td>
+                    <span class="badge" [class]="t.type === 'Issue' ? 'bg-warning text-dark' : 'bg-success'">
+                      {{ t.type }}
+                    </span>
+                  </td>
+                  <td>{{ t.employeeName || '-' }}</td>
+                  <td>{{ t.assetName || '-' }}</td>
+                  <td>
+                    <span *ngIf="t.location; else noLoc" class="badge bg-light text-dark">
+                      {{ t.location }}
+                    </span>
+                    <ng-template #noLoc><span class="text-muted">-</span></ng-template>
+                  </td>
+                  <td class="pe-3">{{ t.date || '-' }}</td>
+                </tr>
+                <tr *ngIf="!transactions || transactions.length === 0">
+                  <td colspan="6" class="text-center text-muted py-3">No recent transactions</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

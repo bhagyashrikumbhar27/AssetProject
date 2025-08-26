@@ -106,6 +106,34 @@ export class SuperAdminDashboardComponent implements OnInit, OnDestroy {
     private router: Router
   ) {}
 
+  // Recent Transactions (from Store Manager)
+  transactions: any[] = [];
+
+  loadRecentTransactions() {
+    // Lazy import to avoid circular deps: use fetch via store-manager service endpoint
+    fetch(`${(window as any).environment?.apiUrl || 'http://localhost:8080/api'}/store-manager/transactions`, {
+      credentials: 'include'
+    })
+      .then(r => r.text())
+      .then(raw => {
+        try {
+          const parsed = JSON.parse(raw);
+          const rows = Array.isArray(parsed) ? parsed : Array.isArray((parsed as any).data) ? (parsed as any).data : [];
+          this.transactions = rows.map((t: any) => ({
+            id: t.id,
+            type: t.txn_type || t.type || 'Issue',
+            employeeName: t.employee_name || t.employeeName || (t.employeeId ? `Emp #${t.employeeId}` : ''),
+            assetName: t.asset_name || t.assetName || (t.assetId ? `Asset #${t.assetId}` : ''),
+            location: t.employee_location || t.employeeLocation || t.location || '-',
+            date: t.txn_date || t.date || t.transactionDate
+          })).slice(0, 5);
+        } catch {
+          this.transactions = [];
+        }
+      })
+      .catch(() => (this.transactions = []));
+  }
+
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
     this.loadAllData();
@@ -120,6 +148,7 @@ export class SuperAdminDashboardComponent implements OnInit, OnDestroy {
     // Subscribe to real-time updates
     const usersSub = this.superAdminService.usersUpdated$.subscribe(() => {
       this.loadUsers();
+      this.loadRecentTransactions();
     });
 
     const rolesSub = this.superAdminService.rolesUpdated$.subscribe(() => {
@@ -156,6 +185,7 @@ export class SuperAdminDashboardComponent implements OnInit, OnDestroy {
     this.loadRoles();
     this.loadDepartments();
     this.loadAllRequests();
+    this.loadRecentTransactions();
 
     // Calculate stats after a short delay to ensure data is loaded
     setTimeout(() => {
