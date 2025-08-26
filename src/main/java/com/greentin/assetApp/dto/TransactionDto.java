@@ -17,4 +17,8 @@ public class TransactionDto {
     private TxnType txnType;
     private LocalDateTime txnDate;
     private String notes;
+
+    // Enriched fields for UI cards
+    private Long locationId;      // employee's assigned location id
+    private String locationName;  // employee's assigned location name
 }

@@ -15,6 +15,7 @@ import com.greentin.assetApp.service.SuperAdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,10 +33,11 @@ public class SuperAdminServiceImpl implements SuperAdminService {
 
     // 🔹 Users
     @Override
+    @Transactional(readOnly = true)
     public List<UserDto> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(UserDto::new)
+                .map(UserDto::new) // DTO extracts location safely without serializing lazy proxy
                 .collect(Collectors.toList());
     }
 
@@ -68,12 +70,19 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         // Encode password
         String encodedPassword = passwordEncoder.encode(userDto.getPassword());
 
+        Location assigned = null;
+        if (userDto.getLocationId() != null) {
+            assigned = locationRepository.findById(userDto.getLocationId())
+                    .orElseThrow(() -> new IllegalArgumentException("Location not found"));
+        }
+
         User user = User.builder()
                 .name(userDto.getName())
                 .email(email)
                 .role(userDto.getRole())
                 .department(userDto.getDepartment())
                 .password(encodedPassword)
+                .assignedLocation(assigned)
                 .build();
 
         User saved = userRepository.save(user);
@@ -95,6 +104,12 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         user.setName(userDto.getName());
         user.setEmail(userDto.getEmail());
         user.setRole(userDto.getRole());
+        
+        if (userDto.getLocationId() != null) {
+            Location assigned = locationRepository.findById(userDto.getLocationId())
+                    .orElseThrow(() -> new IllegalArgumentException("Location not found"));
+            user.setAssignedLocation(assigned);
+        }
 
         return new UserDto(userRepository.save(user));
     }

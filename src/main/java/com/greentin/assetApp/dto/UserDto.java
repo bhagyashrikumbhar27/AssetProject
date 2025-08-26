@@ -16,6 +16,10 @@ public class UserDto {
     private String department; // optional for creation
     private String password;   // initial password set by Super Admin
 
+    // Location fields for display and assignment
+    private Long locationId;    // assigned location id
+    private String locationName; // assigned location name
+
     public UserDto(User user) {
         this.id = user.getId();
         this.name = user.getName();
@@ -23,5 +27,9 @@ public class UserDto {
         this.role = user.getRole();
         this.department = user.getDepartment();
         // Intentionally NOT exposing password
+        if (user.getAssignedLocation() != null) {
+            this.locationId = user.getAssignedLocation().getId();
+            this.locationName = user.getAssignedLocation().getName();
+        }
     }
 }

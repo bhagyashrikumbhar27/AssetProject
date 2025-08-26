@@ -9,8 +9,12 @@ import com.greentin.assetApp.repository.LocationRepository;
 import com.greentin.assetApp.repository.UserRepository;
 import com.greentin.assetApp.repository.projection.EmployeeRequestCount;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -24,19 +28,50 @@ public class DepartmentAdminService {
     private final AssetRequestRepository assetRequestRepository;
     private final com.greentin.assetApp.service.EmailService emailService;
 
-    private String currentAdminDepartment() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User admin = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
-        if (!"DEPARTMENT_ADMIN".equalsIgnoreCase(admin.getRole())) {
-            throw new RuntimeException("Not a department admin");
+    private User currentAdminUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthenticated");
         }
+        String email = auth.getName();
+        User admin = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin not found"));
+        if (!"DEPARTMENT_ADMIN".equalsIgnoreCase(admin.getRole()) &&
+                !"SUPER_ADMIN".equalsIgnoreCase(admin.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient role");
+        }
+        return admin;
+    }
+
+    private String currentAdminDepartment() {
+        User admin = currentAdminUser();
         return admin.getDepartment();
     }
 
     // --- Employees in current department ---
+    @Transactional(readOnly = true)
     public List<User> listDepartmentEmployees() {
         return userRepository.findByDepartment(currentAdminDepartment());
+    }
+
+    // --- Assign employee location (within same department) ---
+    @Transactional
+    public com.greentin.assetApp.dto.UserDto assignEmployeeLocation(Long employeeUserId, Long locationId) {
+        String dept = currentAdminDepartment();
+        User employee = userRepository.findById(employeeUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
+        if (employee.getDepartment() == null || !dept.equals(employee.getDepartment())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Employee is not in your department");
+        }
+        Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Location not found"));
+        if (location.getDepartment() == null || !dept.equals(location.getDepartment())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Location not in your department");
+        }
+        employee.setAssignedLocation(location);
+        User saved = userRepository.save(employee);
+        // Build DTO inside transaction to avoid LazyInitialization issues
+        return new com.greentin.assetApp.dto.UserDto(saved);
     }
 
     // --- Pending requests in current department ---

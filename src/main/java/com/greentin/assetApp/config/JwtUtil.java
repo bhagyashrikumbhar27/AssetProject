@@ -70,7 +70,9 @@ public class JwtUtil {
     }
 
     public static Claims parse(String token) {
+        // Allow small clock skew (e.g., 60 seconds) to reduce false expirations due to drift
         return Jwts.parserBuilder()
+                .setAllowedClockSkewSeconds(60)
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)

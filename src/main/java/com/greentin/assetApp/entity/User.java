@@ -1,5 +1,6 @@
 package com.greentin.assetApp.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,6 +27,12 @@ public class User {
     private String department;
 
     private String role;
+
+    // The primary assigned location for the employee (optional)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_location_id")
+    @JsonIgnore // avoid lazy proxy serialization issues on endpoints that return User
+    private Location assignedLocation;
 
     public void setRole(String role) {
         if (role != null) {

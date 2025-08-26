@@ -3,6 +3,7 @@ package com.greentin.assetApp.controller;
 import com.greentin.assetApp.entity.AssetRequest;
 import com.greentin.assetApp.entity.Location;
 import com.greentin.assetApp.entity.User;
+import com.greentin.assetApp.dto.UserDto;
 import com.greentin.assetApp.service.DepartmentAdminService;
 import com.greentin.assetApp.util.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +80,13 @@ public class DepartmentAdminController {
     public ResponseEntity<ApiResponse> deleteLocation(@PathVariable Long id) {
         departmentAdminService.deleteLocation(id);
         return ResponseEntity.ok(new ApiResponse(true, "Location deleted", null));
+    }
+
+    // --- Assign employee location ---
+    @PostMapping("/employees/{userId}/location/{locationId}")
+    public ResponseEntity<UserDto> assignEmployeeLocation(@PathVariable Long userId, @PathVariable Long locationId) {
+        UserDto dto = departmentAdminService.assignEmployeeLocation(userId, locationId);
+        return ResponseEntity.ok(dto);
     }
 
     // --- Count requests from an employee ---

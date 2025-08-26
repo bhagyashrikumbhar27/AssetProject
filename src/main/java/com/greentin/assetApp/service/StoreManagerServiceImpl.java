@@ -5,8 +5,10 @@ import com.greentin.assetApp.entity.*;
 import com.greentin.assetApp.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.stream.Stream;
+import java.util.Optional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,6 +21,7 @@ public class StoreManagerServiceImpl implements StoreManagerService {
     private final StoreAssetRepository assetRepo;
     private final AssetTransactionRepository txnRepo;
     private final LocationRepository locationRepository;
+    private final UserRepository userRepository;
 
     @Override
     public StoreStatsDto getStoreStats() {
@@ -107,17 +110,30 @@ public class StoreManagerServiceImpl implements StoreManagerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TransactionDto> getTransactions() {
         return txnRepo.findAll()
                 .stream()
-                .map(t -> TransactionDto.builder()
-                        .id(t.getId())
-                        .assetId(t.getAssetId())
-                        .employeeId(t.getEmployeeId())
-                        .txnType(t.getTxnType())
-                        .txnDate(t.getTxnDate())
-                        .notes(t.getNotes())
-                        .build())
+                .map(t -> {
+                    TransactionDto.TransactionDtoBuilder builder = TransactionDto.builder()
+                            .id(t.getId())
+                            .assetId(t.getAssetId())
+                            .employeeId(t.getEmployeeId())
+                            .txnType(t.getTxnType())
+                            .txnDate(t.getTxnDate())
+                            .notes(t.getNotes());
+
+                    // Enrich with employee assigned location if present
+                    if (t.getEmployeeId() != null) {
+                        userRepository.findById(t.getEmployeeId()).ifPresent(user -> {
+                            if (user.getAssignedLocation() != null) {
+                                builder.locationId(user.getAssignedLocation().getId())
+                                       .locationName(user.getAssignedLocation().getName());
+                            }
+                        });
+                    }
+                    return builder.build();
+                })
                 .collect(Collectors.toList());
     }
 
