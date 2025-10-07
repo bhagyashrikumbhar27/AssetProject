@@ -50,6 +50,11 @@ public class StoreManagerController {
         service.createAsset(request);
     }
 
+    @PostMapping("/transactions/resolve")
+    public void resolveTransaction(@RequestBody ResolveTransactionRequestDto request) {
+        service.resolveTransaction(request);
+    }
+
     // Locations for Store Manager dashboard
     @GetMapping("/locations")
     public java.util.List<com.greentin.assetApp.entity.Location> getLocations() {

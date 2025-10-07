@@ -19,6 +19,9 @@ public interface StoreManagerService {
 
     void createAsset(CreateAssetRequestDto request);
 
+    // Mark an issued item as resolved/closed with a date
+    void resolveTransaction(ResolveTransactionRequestDto request);
+
     // Dashboard: show all locations for manager context
     java.util.List<com.greentin.assetApp.entity.Location> getLocations();
 }

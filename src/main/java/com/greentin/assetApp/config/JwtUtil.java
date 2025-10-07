@@ -14,10 +14,15 @@ public class JwtUtil {
 
     private static String SECRET;
     private static long EXPIRATION_MS;
+    private static long ALLOWED_SKEW_SECONDS = 60; // default
 
     public static void configure(String base64Secret, long expirationMs) {
         SECRET = base64Secret;
         EXPIRATION_MS = expirationMs;
+    }
+
+    public static void setAllowedSkewSeconds(long seconds) {
+        ALLOWED_SKEW_SECONDS = Math.max(0, Math.min(seconds, 600)); // cap at 10 minutes
     }
 
     private static SecretKey getSigningKey() {
@@ -72,7 +77,7 @@ public class JwtUtil {
     public static Claims parse(String token) {
         // Allow small clock skew (e.g., 60 seconds) to reduce false expirations due to drift
         return Jwts.parserBuilder()
-                .setAllowedClockSkewSeconds(60)
+                .setAllowedClockSkewSeconds(ALLOWED_SKEW_SECONDS)
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)

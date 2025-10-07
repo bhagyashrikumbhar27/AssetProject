@@ -18,6 +18,8 @@ public class TransactionDto {
     private LocalDateTime txnDate;
     private String notes;
 
+    private LocalDateTime resolvedDate; // when issue was fixed/closed
+
     // Enriched fields for UI cards
     private Long locationId;      // employee's assigned location id
     private String locationName;  // employee's assigned location name

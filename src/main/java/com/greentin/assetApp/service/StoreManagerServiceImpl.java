@@ -87,6 +87,7 @@ public class StoreManagerServiceImpl implements StoreManagerService {
                 .txnType(TxnType.RETURN)
                 .txnDate(LocalDateTime.now())
                 .notes(request.getNotes())
+                .resolvedDate(LocalDateTime.now()) // mark issue resolved at return time
                 .build();
         txnRepo.save(txn);
     }
@@ -121,7 +122,8 @@ public class StoreManagerServiceImpl implements StoreManagerService {
                             .employeeId(t.getEmployeeId())
                             .txnType(t.getTxnType())
                             .txnDate(t.getTxnDate())
-                            .notes(t.getNotes());
+                            .notes(t.getNotes())
+                            .resolvedDate(t.getResolvedDate());
 
                     // Enrich with employee assigned location if present
                     if (t.getEmployeeId() != null) {
@@ -146,6 +148,19 @@ public class StoreManagerServiceImpl implements StoreManagerService {
                 .status(request.getQuantity() < 5 ? AssetStatus.LOW_STOCK : AssetStatus.AVAILABLE)
                 .build();
         assetRepo.save(asset);
+    }
+
+    @Override
+    public void resolveTransaction(ResolveTransactionRequestDto request) {
+        AssetTransaction txn = txnRepo.findById(request.getTransactionId())
+                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+        txn.setResolvedDate(request.getResolvedDate() != null ? request.getResolvedDate() : LocalDateTime.now());
+        if (request.getNotes() != null && !request.getNotes().isBlank()) {
+            // append note to existing notes
+            String combined = (txn.getNotes() == null ? "" : txn.getNotes() + " | ") + request.getNotes();
+            txn.setNotes(combined);
+        }
+        txnRepo.save(txn);
     }
 
     @Override

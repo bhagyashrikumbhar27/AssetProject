@@ -17,6 +17,9 @@ public class AssetAppApplication {
     @Value("${app.security.jwt.expiration-ms}")
     private long jwtExpirationMs;
 
+    @Value("${app.security.jwt.allowed-skew-seconds:120}")
+    private long jwtAllowedSkewSeconds;
+
     public static void main(String[] args) {
         // spring-dotenv auto-loads .env on the classpath; no manual code needed
         SpringApplication.run(AssetAppApplication.class, args);
@@ -25,6 +28,7 @@ public class AssetAppApplication {
     @Bean
     public Object initJwt() {
         JwtUtil.configure(jwtSecret, jwtExpirationMs);
+        JwtUtil.setAllowedSkewSeconds(jwtAllowedSkewSeconds);
         return new Object();
     }
 }

@@ -26,6 +26,9 @@ public class AssetTransaction {
     private LocalDateTime txnDate;
 
     private String notes;
+
+    // When an issued item is fixed/closed, the manager records the resolved date
+    private LocalDateTime resolvedDate;
 }
 
 
