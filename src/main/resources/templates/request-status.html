@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Request Status</title>
+    <style>
+        body{font-family:Arial,Helvetica,sans-serif;color:#222}
+        .card{max-width:640px;margin:0 auto;border:1px solid #eee;border-radius:8px;overflow:hidden}
+        .header{background:#0b6ef6;color:#fff;padding:16px 20px}
+        .content{padding:20px}
+        .badge{display:inline-block;padding:2px 8px;border-radius:12px;background:#eee}
+        .approved{background:#16a34a;color:#fff}
+        .rejected{background:#dc2626;color:#fff}
+        .muted{color:#666}
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="header">Asset Request Update</div>
+    <div class="content">
+        <p>Dear <strong th:text="${name}">User</strong>,</p>
+        <p>Your asset request has been
+            <span class="badge" th:classappend=" ${status}=='APPROVED' ? ' approved' : (${status}=='REJECTED' ? ' rejected' : '') "
+                  th:text="${status}">STATUS</span>.</p>
+        <p>
+            <strong>Request ID:</strong> <span th:text="${requestId}">0</span><br/>
+            <strong>Asset Type:</strong> <span th:text="${assetType}">Type</span><br/>
+            <strong>Priority:</strong> <span th:text="${priority}">PRIORITY</span><br/>
+            <strong>Justification:</strong> <span th:text="${justification}">-</span>
+        </p>
+        <p class="muted" th:text="${statusMessage}">Status message</p>
+        <p>Best regards,<br/>Asset Management System</p>
+    </div>
+</div>
+</body>
+</html>
