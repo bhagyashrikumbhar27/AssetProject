@@ -1,0 +1,199 @@
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+        <div class="card border-0 shadow-lg">
+          <div class="card-body p-5">
+            <!-- Header -->
+            <div class="text-center mb-4">
+              <div class="mb-3">
+                <i class="bi bi-person-plus-fill text-primary" style="font-size: 3rem;"></i>
+              </div>
+              <h2 class="h3 mb-2">Create Account</h2>
+              <p class="text-muted">Join Asset Issue Tracker</p>
+            </div>
+
+            <!-- Success Message -->
+            <div class="alert alert-success alert-dismissible fade show" *ngIf="successMessage" role="alert">
+              <i class="bi bi-check-circle me-2"></i>
+              {{ successMessage }}
+            </div>
+
+            <!-- Error Message -->
+            <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage" role="alert">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              {{ errorMessage }}
+            </div>
+
+            <!-- Registration Form -->
+            <form novalidate (ngSubmit)="register(regForm)" #regForm="ngForm">
+              <!-- Name -->
+              <div class="mb-3">
+                <label for="name" class="form-label fw-semibold">
+                  <i class="bi bi-person-badge me-1"></i>Full Name
+                </label>
+                <input type="text" 
+                       class="form-control form-control-lg" 
+                       id="name"
+                       name="name"
+                       [(ngModel)]="registrationForm.name"
+                       placeholder="Enter full name"
+                       required
+                       minlength="2"
+                       #name="ngModel"
+                       [class.is-invalid]="name.invalid && (name.touched || regForm.submitted)">
+                <div class="invalid-feedback" *ngIf="name.invalid && (name.touched || regForm.submitted)">
+                  <span *ngIf="name.errors?.['required']">Full name is required</span>
+                  <span *ngIf="name.errors?.['minlength']">At least 2 characters</span>
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="mb-3">
+                <label for="email" class="form-label fw-semibold">
+                  <i class="bi bi-envelope me-1"></i>Email Address
+                </label>
+                <input type="email" 
+                       class="form-control form-control-lg" 
+                       id="email"
+                       name="email"
+                       [(ngModel)]="registrationForm.email"
+                       placeholder="Enter email address"
+                       required
+                       email
+                       #email="ngModel"
+                       [class.is-invalid]="email.invalid && (email.touched || regForm.submitted)">
+                <div class="invalid-feedback" *ngIf="email.invalid && (email.touched || regForm.submitted)">
+                  <span *ngIf="email.errors?.['required']">Email is required</span>
+                  <span *ngIf="email.errors?.['email']">Please enter a valid email</span>
+                </div>
+              </div>
+
+              <!-- Role -->
+              <div class="mb-3">
+                <label for="role" class="form-label fw-semibold">
+                  <i class="bi bi-shield me-1"></i>Role
+                </label>
+                <select class="form-select form-select-lg" 
+                        id="role"
+                        name="role"
+                        [(ngModel)]="registrationForm.role"
+                        required
+                        #role="ngModel"
+                        [class.is-invalid]="role.invalid && (role.touched || regForm.submitted)">
+                  <option *ngFor="let role of getRoleOptions()" [value]="role">
+                    {{ role | titlecase }}
+                  </option>
+                </select>
+                <div class="invalid-feedback" *ngIf="role.invalid && (role.touched || regForm.submitted)">
+                  Role is required
+                </div>
+              </div>
+
+              <!-- Department (conditionally required) -->
+              <div class="mb-3">
+                <label for="department" class="form-label fw-semibold">
+                  <i class="bi bi-building me-1"></i>Department
+                  <span class="text-danger" *ngIf="isRoleRequiresDepartment()">*</span>
+                </label>
+                <select class="form-select form-select-lg" 
+                        id="department"
+                        name="department"
+                        [(ngModel)]="registrationForm.department"
+                        [required]="isRoleRequiresDepartment()"
+                        #department="ngModel"
+                        [class.is-invalid]="department.invalid && (department.touched || regForm.submitted)">
+                  <option value="">Select Department</option>
+                  <option *ngFor="let dept of getDepartmentOptions()" [value]="dept">
+                    {{ dept }}
+                  </option>
+                </select>
+                <div class="invalid-feedback" *ngIf="department.invalid && (department.touched || regForm.submitted)">
+                  Department is required for this role
+                </div>
+                <small class="form-text text-muted" *ngIf="!isRoleRequiresDepartment()">
+                  Optional for this role
+                </small>
+              </div>
+
+              <!-- Password Row -->
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="password" class="form-label fw-semibold">
+                    <i class="bi bi-lock me-1"></i>Password
+                  </label>
+                  <input type="password" 
+                         class="form-control form-control-lg" 
+                         id="password"
+                         name="password"
+                         [(ngModel)]="registrationForm.password"
+                         placeholder="Enter password"
+                         required
+                         [pattern]="passwordPattern"
+                         #password="ngModel"
+                         [class.is-invalid]="password.invalid && (password.touched || regForm.submitted)">
+                  <div class="invalid-feedback" *ngIf="password.invalid && (password.touched || regForm.submitted)">
+                    <span *ngIf="password.errors?.['required']">Password is required</span>
+                    <span *ngIf="password.errors?.['pattern']">At least 8 chars incl. upper, lower, number, special</span>
+                  </div>
+                  <small class="text-muted" [class.text-danger]="registrationForm.password && !isStrongPassword(registrationForm.password)">
+                    Use 8+ chars with upper, lower, number, and special character.
+                  </small>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="confirmPassword" class="form-label fw-semibold">
+                    <i class="bi bi-lock-fill me-1"></i>Confirm Password
+                  </label>
+                  <input type="password" 
+                         class="form-control form-control-lg" 
+                         id="confirmPassword"
+                         name="confirmPassword"
+                         [(ngModel)]="registrationForm.confirmPassword"
+                         placeholder="Confirm password"
+                         required
+                         #confirmPassword="ngModel"
+                         [class.is-invalid]="(confirmPassword.invalid && (confirmPassword.touched || regForm.submitted)) || ((registrationForm.confirmPassword || '').length > 0 && registrationForm.confirmPassword !== registrationForm.password && (confirmPassword.touched || regForm.submitted))">
+                  <div class="invalid-feedback" *ngIf="confirmPassword.invalid && (confirmPassword.touched || regForm.submitted)">
+                    Confirm password is required
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="registrationForm.confirmPassword && registrationForm.confirmPassword !== registrationForm.password && (confirmPassword.touched || regForm.submitted)">
+                    Passwords do not match
+                  </div>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="d-grid mb-3">
+                <button type="submit" 
+                        class="btn btn-primary btn-lg"
+                        [disabled]="isLoading || regForm.invalid || (registrationForm.confirmPassword !== registrationForm.password)">
+                  <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  <i class="bi bi-person-plus me-2" *ngIf="!isLoading"></i>
+                  {{ isLoading ? 'Creating Account...' : 'Create Account' }}
+                </button>
+              </div>
+
+              <!-- Login Link -->
+              <div class="text-center">
+                <p class="mb-0">
+                  Already have an account? 
+                  <a routerLink="/login" class="text-decoration-none fw-semibold">
+                    Login here
+                  </a>
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Additional Info -->
+        <div class="text-center mt-4">
+          <small class="text-muted">
+            <i class="bi bi-shield-check me-1"></i>
+            Your information is secure and will be used only for account management
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

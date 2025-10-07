@@ -1,0 +1,62 @@
+/* Layout */
+.dashboard-wrapper {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f6f8fb;
+}
+
+.topbar {
+  height: 56px;
+  background: #0b1f3b; /* Navy */
+  color: #fff;
+}
+.topbar .nav .nav-link { color: rgba(255,255,255,0.75); }
+.topbar .nav .nav-link.active { color: #0b1f3b; background: #fff; }
+.topbar-title { font-weight: 600; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 0;
+}
+
+/* Sidebar */
+.sidebar {
+  min-height: calc(100vh - 56px);
+  background: #0f274d; /* slightly lighter navy */
+  color: #cbd5e1;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  transform: translateX(0);
+  transition: transform .2s ease-in-out;
+}
+.sidebar-header { padding: 12px 16px; }
+.sidebar-menu { --bs-list-group-bg: transparent; }
+.sidebar-item { color: #cbd5e1; border: 0; background: transparent; }
+.sidebar-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+.sidebar-item.active { background: rgba(13,110,253,.25); color: #fff; }
+.sidebar-item i { color: #94a3b8; }
+.sidebar-item:hover i, .sidebar-item.active i { color: #fff; }
+
+/* Content */
+.content { padding: 16px; }
+
+/* Cards emphasis */
+.card .display-6 { font-weight: 600; }
+
+/* Mobile behavior */
+@media (max-width: 991.98px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 1040;
+    transform: translateX(-100%);
+    box-shadow: 0 0 24px rgba(0,0,0,.25);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .content { padding: 16px; }
+}
