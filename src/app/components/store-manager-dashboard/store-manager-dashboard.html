@@ -574,14 +574,7 @@
                     Employee
                     <i [class]="'bi ms-1 ' + getTransactionsSortIcon('employeeName')"></i>
                   </th>
-                  <th class="border-0 sortable" (click)="sortTransactions('employeeLocation')" style="cursor: pointer;">
-                    Location
-                    <i [class]="'bi ms-1 ' + getTransactionsSortIcon('employeeLocation')"></i>
-                  </th>
-                  <th class="border-0 sortable" (click)="sortTransactions('date')" style="cursor: pointer;">
-                    Date
-                    <i [class]="'bi ms-1 ' + getTransactionsSortIcon('date')"></i>
-                  </th>
+                  <th class="border-0">Resolved</th>
                   <th class="border-0 sortable" (click)="sortTransactions('status')" style="cursor: pointer;">
                     Status
                     <i [class]="'bi ms-1 ' + getTransactionsSortIcon('status')"></i>
@@ -607,10 +600,11 @@
                   </td>
                   <td>{{ transaction.employeeName || transaction.employee }}</td>
                   <td>
-                    <span class="badge bg-light text-dark" *ngIf="transaction.employeeLocation">{{ transaction.employeeLocation }}</span>
-                    <span *ngIf="!transaction.employeeLocation" class="text-muted">-</span>
+                    <span *ngIf="transaction.resolvedDate; else notResolved" class="badge bg-info text-dark">
+                      {{ transaction.resolvedDate | date:'short' }}
+                    </span>
+                    <ng-template #notResolved><span class="text-muted">-</span></ng-template>
                   </td>
-                  <td>{{ transaction.date || transaction.transactionDate | date:'short' }}</td>
                   <td>
                     <span class="badge bg-success">{{ transaction.status || 'Completed' }}</span>
                   </td>

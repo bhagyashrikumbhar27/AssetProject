@@ -192,14 +192,15 @@ export class StoreManagerService {
                   ? (parsed as any).rows
                   : [];
 
-            // Map DB fields (id, asset_id, employee_id, notes, txn_date, txn_type)
+            // Map DB fields (id, asset_id, employee_id, notes, txn_date, txn_type, resolved_date)
             // to UI fields expected by the dashboard template
             return records.map((t: any) => {
               const typeRaw = t.txn_type || t.type || t.transactionType;
               const type = typeRaw === 'ISSUE' ? 'Issue' : typeRaw === 'RETURN' ? 'Return' : (typeRaw || 'Issue');
               const assetId = t.asset_id ?? t.assetId ?? t.asset?.id;
               const employeeId = t.employee_id ?? t.employeeId ?? t.employee?.id;
-              const date = t.txn_date || t.date || t.transactionDate;
+              const date = t.txn_date || t.issueDate || t.date || t.transactionDate;
+              const resolvedDate = t.resolved_date || t.resolvedDate || t.fix_date || t.fixedDate || t.closure_date || t.closureDate || null;
               const assetName = t.asset_name || t.assetName || (assetId != null ? `Asset #${assetId}` : (t.asset || 'Unknown Asset'));
               const employeeName = t.employee_name || t.employeeName || (employeeId != null ? `Emp #${employeeId}` : (t.employee || 'Unknown Employee'));
               const employeeLocation = t.employee_location || t.employeeLocation || t.location || '';
@@ -213,8 +214,9 @@ export class StoreManagerService {
                 assetName,                 // preferred by template
                 employee: employeeName,    // used by template fallback
                 employeeName,              // preferred by template
-                employeeLocation,          // new: show location in Store Manager
-                date: date,                // preferred by template
+                employeeLocation,          // show location in Store Manager
+                date,                      // issue/transaction date
+                resolvedDate,              // new: resolved/fixed/closure date
                 transactionDate: date,     // fallback used by template
                 status: t.status || 'Completed',
                 notes: t.notes ?? ''

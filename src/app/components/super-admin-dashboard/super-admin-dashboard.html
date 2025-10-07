@@ -381,8 +381,7 @@
                   <th class="border-0">Type</th>
                   <th class="border-0">Employee</th>
                   <th class="border-0">Asset</th>
-                  <th class="border-0">Location</th>
-                  <th class="border-0 pe-3">Date</th>
+                  <th class="border-0 pe-3">Resolved</th>
                 </tr>
               </thead>
               <tbody>
@@ -395,16 +394,15 @@
                   </td>
                   <td>{{ t.employeeName || '-' }}</td>
                   <td>{{ t.assetName || '-' }}</td>
-                  <td>
-                    <span *ngIf="t.location; else noLoc" class="badge bg-light text-dark">
-                      {{ t.location }}
+                  <td class="pe-3">
+                    <span *ngIf="t.resolvedDate; else notResolvedSA" class="badge bg-info text-dark">
+                      {{ t.resolvedDate | date:'short' }}
                     </span>
-                    <ng-template #noLoc><span class="text-muted">-</span></ng-template>
+                    <ng-template #notResolvedSA><span class="text-muted">-</span></ng-template>
                   </td>
-                  <td class="pe-3">{{ t.date || '-' }}</td>
                 </tr>
                 <tr *ngIf="!transactions || transactions.length === 0">
-                  <td colspan="6" class="text-center text-muted py-3">No recent transactions</td>
+                  <td colspan="7" class="text-center text-muted py-3">No recent transactions</td>
                 </tr>
               </tbody>
             </table>

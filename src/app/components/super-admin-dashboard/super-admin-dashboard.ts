@@ -125,7 +125,8 @@ export class SuperAdminDashboardComponent implements OnInit, OnDestroy {
             employeeName: t.employee_name || t.employeeName || (t.employeeId ? `Emp #${t.employeeId}` : ''),
             assetName: t.asset_name || t.assetName || (t.assetId ? `Asset #${t.assetId}` : ''),
             location: t.employee_location || t.employeeLocation || t.location || '-',
-            date: t.txn_date || t.date || t.transactionDate
+            date: t.txn_date || t.issueDate || t.date || t.transactionDate,
+            resolvedDate: t.resolved_date || t.resolvedDate || t.fix_date || t.fixedDate || t.closure_date || t.closureDate || null
           })).slice(0, 5);
         } catch {
           this.transactions = [];
